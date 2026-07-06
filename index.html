@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>강사료 영수증 · 전자서명</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<!-- PDF 생성 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+  @font-face {
+    font-family: 'Pretendard';
+    src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/woff2/Pretendard-Regular.woff2') format('woff2');
+    font-weight: 400;
+  }
+  @font-face {
+    font-family: 'Pretendard';
+    src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/woff2/Pretendard-SemiBold.woff2') format('woff2');
+    font-weight: 600;
+  }
+  @font-face {
+    font-family: 'Pretendard';
+    src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/woff2/Pretendard-Bold.woff2') format('woff2');
+    font-weight: 700;
+  }
+
+  :root{
+    --navy:#122B4D;
+    --navy-deep:#0B1D34;
+    --amber:#C97A2E;
+    --amber-soft:#F3E4D2;
+    --line:#DDE2E8;
+    --bg:#F4F6F8;
+    --ink:#1C2733;
+    --sub:#647184;
+    --danger:#C0392B;
+    --ok:#1E7A46;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    padding-bottom:64px;
+  }
+
+  /* Header */
+  .topbar{
+    background:linear-gradient(135deg,var(--navy-deep),var(--navy) 70%);
+    color:#fff;
+    padding:22px 20px 26px;
+    position:relative;
+    overflow:hidden;
+  }
+  .topbar::after{
+    content:"🚌";
+    position:absolute;
+    right:-6px;
+    bottom:-14px;
+    font-size:74px;
+    opacity:.12;
+    transform:rotate(-6deg);
+  }
+  .eyebrow{
+    font-size:12px;
+    letter-spacing:.14em;
+    color:var(--amber-soft);
+    font-weight:600;
+    text-transform:uppercase;
+  }
+  .title{
+    font-size:21px;
+    font-weight:700;
+    margin-top:6px;
+    line-height:1.35;
+  }
+  .userbox{
+    margin-top:14px;
+    font-size:12.5px;
+    color:#C9D3E0;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .userbox button{
+    background:rgba(255,255,255,.12);
+    color:#fff;
+    border:1px solid rgba(255,255,255,.25);
+    border-radius:7px;
+    padding:5px 10px;
+    font-size:12px;
+    cursor:pointer;
+  }
+
+  .wrap{max-width:640px;margin:0 auto;padding:0 16px;}
+
+  .card{
+    background:#fff;
+    border-radius:14px;
+    border:1px solid var(--line);
+    margin-top:16px;
+    padding:18px 18px 20px;
+    box-shadow:0 1px 3px rgba(18,43,77,.05);
+  }
+  .card h2{
+    font-size:14px;
+    margin:0 0 12px;
+    color:var(--navy);
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    gap:7px;
+  }
+  .card h2 .num{
+    background:var(--navy);
+    color:#fff;
+    width:20px;height:20px;
+    border-radius:6px;
+    font-size:11px;
+    display:inline-flex;
+    align-items:center;justify-content:center;
+    font-weight:700;
+  }
+
+  /* Search */
+  .search-row{position:relative;}
+  .search-row input{
+    width:100%;
+    padding:13px 14px;
+    font-size:15px;
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    font-family:inherit;
+    background:#FBFCFD;
+  }
+  .search-row input:focus{outline:none;border-color:var(--navy);background:#fff;}
+  .suggest{
+    position:absolute;
+    top:calc(100% + 6px);
+    left:0;right:0;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:10px;
+    box-shadow:0 8px 24px rgba(18,43,77,.12);
+    z-index:20;
+    max-height:220px;
+    overflow-y:auto;
+    display:none;
+  }
+  .suggest.show{display:block;}
+  .suggest .item{
+    padding:11px 14px;
+    border-bottom:1px solid var(--line);
+    cursor:pointer;
+  }
+  .suggest .item:last-child{border-bottom:none;}
+  .suggest .item:active{background:var(--amber-soft);}
+  .suggest .item b{color:var(--navy);}
+  .suggest .item span{color:var(--sub);font-size:12.5px;display:block;margin-top:2px;}
+  .suggest .empty{padding:14px;color:var(--sub);font-size:13px;text-align:center;}
+
+  .badge-mode{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:12px;font-weight:600;
+    padding:4px 10px;border-radius:20px;
+    margin-top:10px;
+  }
+  .badge-mode.existing{background:#E6F3EA;color:var(--ok);}
+  .badge-mode.new{background:var(--amber-soft);color:var(--amber);}
+
+  /* Form grid */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
+  .grid .full{grid-column:1/-1;}
+  .field label{
+    display:block;font-size:12px;color:var(--sub);font-weight:600;margin-bottom:5px;
+  }
+  .field input, .field select{
+    width:100%;
+    padding:11px 12px;
+    font-size:14.5px;
+    border:1.5px solid var(--line);
+    border-radius:9px;
+    font-family:inherit;
+    background:#FBFCFD;
+  }
+  .field input:focus, .field select:focus{outline:none;border-color:var(--navy);background:#fff;}
+  .field input:disabled{color:var(--sub);background:#F0F2F4;}
+
+  /* Amount calc */
+  .calc{
+    margin-top:14px;
+    background:#F8F5EF;
+    border:1px solid var(--amber-soft);
+    border-radius:10px;
+    padding:14px;
+  }
+  .calc-row{display:flex;justify-content:space-between;font-size:13.5px;padding:4px 0;}
+  .calc-row .lbl{color:var(--sub);}
+  .calc-row.net{
+    border-top:1px dashed #D9C7A8;
+    margin-top:6px;padding-top:10px;
+    font-weight:700;font-size:15.5px;color:var(--navy);
+  }
+
+  /* Signature */
+  .sig-wrap{
+    border:1.5px dashed #B9C2CE;
+    border-radius:12px;
+    background:#FBFCFD;
+    position:relative;
+    touch-action:none;
+  }
+  #sigCanvas{
+    width:100%;
+    height:180px;
+    display:block;
+    border-radius:12px;
+    touch-action:none;
+  }
+  .sig-placeholder{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    color:#B9C2CE;font-size:13px;pointer-events:none;
+  }
+  .sig-actions{display:flex;justify-content:flex-end;margin-top:8px;}
+  .sig-actions button{
+    background:none;border:none;color:var(--sub);font-size:12.5px;
+    text-decoration:underline;cursor:pointer;padding:4px;
+  }
+
+  /* Consent */
+  .consent{
+    display:flex;gap:10px;align-items:flex-start;
+    padding:11px 0;
+    font-size:13px;
+    line-height:1.5;
+    border-bottom:1px solid var(--line);
+  }
+  .consent:last-child{border-bottom:none;}
+  .consent input{margin-top:3px;width:17px;height:17px;flex-shrink:0;accent-color:var(--navy);}
+  .consent .ctitle{font-weight:600;color:var(--ink);}
+  .consent .cdesc{color:var(--sub);margin-top:2px;}
+
+  /* Submit */
+  .submit-bar{
+    max-width:640px;margin:20px auto 0;padding:0 16px;
+  }
+  .submit-btn{
+    width:100%;
+    padding:16px;
+    background:var(--navy);
+    color:#fff;
+    border:none;
+    border-radius:12px;
+    font-size:16px;
+    font-weight:700;
+    font-family:inherit;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .submit-btn:disabled{background:#A9B3C1;cursor:not-allowed;}
+  .status-msg{
+    text-align:center;font-size:12.5px;color:var(--sub);margin-top:9px;min-height:16px;
+  }
+  .status-msg.ok{color:var(--ok);font-weight:600;}
+  .status-msg.err{color:var(--danger);font-weight:600;}
+
+  .login-gate{
+    max-width:640px;margin:60px auto;padding:0 24px;text-align:center;
+  }
+  .login-gate p{color:var(--sub);font-size:14px;margin-bottom:18px;}
+  .login-btn{
+    background:var(--navy);color:#fff;border:none;border-radius:10px;
+    padding:13px 22px;font-size:14.5px;font-weight:600;cursor:pointer;
+    font-family:inherit;
+  }
+
+  /* Hidden print template for PDF capture */
+  #printTemplate{
+    position:fixed;
+    top:-9999px;left:-9999px;
+    width:794px;
+    background:#fff;
+    font-family:'Pretendard',sans-serif;
+    color:#111;
+    padding:50px 55px;
+  }
+  #printTemplate .p-title{text-align:center;font-size:13px;font-weight:600;margin-bottom:2px;}
+  #printTemplate .p-title2{text-align:center;font-size:19px;font-weight:700;margin-bottom:22px;}
+  #printTemplate table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  #printTemplate table td{border:1px solid #333;padding:9px 12px;}
+  #printTemplate .k{background:#F1F1EE;width:150px;font-weight:600;text-align:center;}
+  #printTemplate .note{font-size:10.5px;color:#555;margin-top:6px;}
+  #printTemplate .receive-line{text-align:center;margin:22px 0 8px;font-size:14px;}
+  #printTemplate .date-line{text-align:center;font-size:13px;margin-bottom:16px;}
+  #printTemplate .sign-row{display:flex;justify-content:center;align-items:center;gap:14px;margin-bottom:26px;}
+  #printTemplate .sign-row img{height:60px;}
+  #printTemplate .calc-title{font-weight:700;font-size:13.5px;margin:8px 0 6px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="eyebrow">2026 충남형 소통공간</div>
+  <div class="title">찾아가는 일자리버스<br>강사료 영수증 · 전자서명</div>
+  <div class="userbox" id="userbox" style="display:none;">
+    <span id="userEmail"></span>
+    <button id="logoutBtn">로그아웃</button>
+  </div>
+</div>
+
+<div id="loginGate" class="login-gate">
+  <p>Google 계정으로 로그인 후 이용할 수 있어요.</p>
+  <button class="login-btn" id="loginBtn">Google로 로그인</button>
+</div>
+
+<div id="appWrap" style="display:none;">
+<div class="wrap">
+
+  <!-- 1. 강사 검색 -->
+  <div class="card">
+    <h2><span class="num">1</span>강사 검색</h2>
+    <div class="search-row">
+      <input type="text" id="searchInput" placeholder="이름으로 검색 (예: 이나진)" autocomplete="off">
+      <div class="suggest" id="suggestBox"></div>
+    </div>
+    <div id="modeBadge"></div>
+  </div>
+
+  <!-- 2. 강사 정보 -->
+  <div class="card">
+    <h2><span class="num">2</span>강사 정보</h2>
+    <div class="grid">
+      <div class="field"><label>성명</label><input type="text" id="f_name"></div>
+      <div class="field"><label>소속</label><input type="text" id="f_org"></div>
+      <div class="field full"><label>주민등록번호</label><input type="text" id="f_ssn" placeholder="750128-2535617"></div>
+      <div class="field full"><label>주소</label><input type="text" id="f_addr"></div>
+      <div class="field"><label>연락처</label><input type="text" id="f_phone" placeholder="010-0000-0000"></div>
+      <div class="field"><label>입금은행</label><input type="text" id="f_bank"></div>
+      <div class="field full"><label>계좌번호</label><input type="text" id="f_account"></div>
+    </div>
+  </div>
+
+  <!-- 3. 강의 정보 및 수당 -->
+  <div class="card">
+    <h2><span class="num">3</span>강의 정보 및 수당</h2>
+    <div class="grid">
+      <div class="field full"><label>구분 (예: 일자리상담소 28차)</label><input type="text" id="f_round"></div>
+      <div class="field"><label>강의일자</label><input type="date" id="f_date"></div>
+      <div class="field"><label>수당 (A)</label><input type="number" id="f_amount" placeholder="220000"></div>
+    </div>
+    <div class="calc">
+      <div class="calc-row"><span class="lbl">소득세 (8%)</span><span id="calc_tax">0원</span></div>
+      <div class="calc-row"><span class="lbl">주민세 (0.8%)</span><span id="calc_local">0원</span></div>
+      <div class="calc-row net"><span>실지급액</span><span id="calc_net">0원</span></div>
+    </div>
+  </div>
+
+  <!-- 4. 개인정보 동의 -->
+  <div class="card">
+    <h2><span class="num">4</span>개인정보 수집·이용 동의</h2>
+    <div class="consent">
+      <input type="checkbox" id="consent1">
+      <div>
+        <div class="ctitle">개인정보 수집·이용 동의</div>
+        <div class="cdesc">강사 소개, 강사료 지급, 설문분석, 세금납부 등을 위해 성명·주민등록번호·소속·연락처·계좌정보를 수집·이용하는 것에 동의합니다.</div>
+      </div>
+    </div>
+    <div class="consent">
+      <input type="checkbox" id="consent2">
+      <div>
+        <div class="ctitle">제3자 제공 동의 (국세청)</div>
+        <div class="cdesc">세금납부 목적으로 성명·주민번호·주소 등을 국세청에 제공하는 것에 동의합니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. 서명 -->
+  <div class="card">
+    <h2><span class="num">5</span>서명</h2>
+    <div class="sig-wrap">
+      <canvas id="sigCanvas"></canvas>
+      <div class="sig-placeholder" id="sigPlaceholder">여기에 서명해 주세요 (손가락 · S펜 모두 가능)</div>
+    </div>
+    <div class="sig-actions"><button id="clearSig">다시 서명</button></div>
+  </div>
+
+</div>
+
+<div class="submit-bar">
+  <button class="submit-btn" id="submitBtn">영수증 제출 · PDF 저장</button>
+  <div class="status-msg" id="statusMsg"></div>
+</div>
+</div>
+
+<!-- 인쇄용 숨김 템플릿 -->
+<div id="printTemplate">
+  <div class="p-title">2026년 충남형 소통공간</div>
+  <div class="p-title2">‘찾아가는 일자리버스’ 강사료 영수증</div>
+  <table>
+    <tr><td class="k">구 분</td><td id="p_round" colspan="1"></td></tr>
+    <tr><td class="k">금 액</td><td id="p_amount"></td></tr>
+    <tr><td class="k">성 명</td><td id="p_name"></td></tr>
+    <tr><td class="k">소 속</td><td id="p_org"></td></tr>
+    <tr><td class="k">주민등록번호</td><td id="p_ssn"></td></tr>
+    <tr><td class="k">주 소</td><td id="p_addr"></td></tr>
+    <tr><td class="k">연 락 처</td><td id="p_phone"></td></tr>
+    <tr><td class="k">입 금 은 행</td><td id="p_bank"></td></tr>
+    <tr><td class="k">계 좌 번 호</td><td id="p_account"></td></tr>
+  </table>
+  <div class="note">※ 주민등록번호 수집 근거는 소득세법 시행령 및 시행규칙에 의거 세금납부를 위함</div>
+
+  <div class="receive-line">상기 금액을 정히 영수함.</div>
+  <div class="date-line" id="p_date"></div>
+  <div class="sign-row">
+    <span>영 수 자</span>
+    <span id="p_name2" style="font-weight:600;"></span>
+    <span>(서명)</span>
+    <img id="p_sigImg" src="">
+  </div>
+
+  <div class="calc-title">지급 산출내역</div>
+  <table>
+    <tr>
+      <td class="k">수당(A)</td>
+      <td class="k">공제금액(B)</td>
+      <td class="k">실지급액(A-B)</td>
+    </tr>
+    <tr>
+      <td id="p_A" style="text-align:center;"></td>
+      <td id="p_B" style="text-align:center;"></td>
+      <td id="p_net" style="text-align:center;"></td>
+    </tr>
+  </table>
+  <div class="note" style="text-align:center;">(소득세 8% / 주민세 0.8%) ※ 소득세 및 주민세 공제</div>
+  <div class="note" style="margin-top:14px;">개인정보 수집·이용/제공 동의: 위 강사는 개인정보 수집·이용 및 제3자(국세청) 제공에 전자적으로 동의하였습니다. (동의일시: <span id="p_consentTime"></span>)</div>
+</div>
+
+<script>
+/* =========================================================
+   Firebase 설정 — trip-manager-fc684 프로젝트의 config를
+   기존 index.html (출장비 정산 관리 v2)에서 그대로 복사해 넣으세요.
+   ========================================================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyD7-CeYQ0MdGuHFI-dw_Ne3E3xcR9LHD74",
+  authDomain: "trip-manager-fc684.firebaseapp.com",
+  projectId: "trip-manager-fc684",
+  storageBucket: "trip-manager-fc684.appspot.com",
+  messagingSenderId: "229407375560",
+  appId: "1:229407375560:web:018dd31caf29f605e425fd"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let currentUser = null;
+let lecturers = []; // 자동완성 캐시
+let selectedLecturerId = null;
+
+/* ---------- 로그인 ---------- */
+document.getElementById('loginBtn').onclick = () => {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(e => alert('로그인 실패: ' + e.message));
+};
+document.getElementById('logoutBtn').onclick = () => auth.signOut();
+
+auth.onAuthStateChanged(user => {
+  currentUser = user;
+  if (user) {
+    document.getElementById('loginGate').style.display = 'none';
+    document.getElementById('appWrap').style.display = 'block';
+    document.getElementById('userbox').style.display = 'flex';
+    document.getElementById('userEmail').textContent = user.email;
+    loadLecturers();
+  } else {
+    document.getElementById('loginGate').style.display = 'block';
+    document.getElementById('appWrap').style.display = 'none';
+    document.getElementById('userbox').style.display = 'none';
+  }
+});
+
+/* ---------- 강사 목록 불러오기 ---------- */
+async function loadLecturers() {
+  const snap = await db.collection('users').doc(currentUser.uid).collection('lecturers').get();
+  lecturers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+/* ---------- 검색 / 자동완성 ---------- */
+const searchInput = document.getElementById('searchInput');
+const suggestBox = document.getElementById('suggestBox');
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim();
+  selectedLecturerId = null;
+  if (!q) { suggestBox.classList.remove('show'); setMode(null); return; }
+  const matches = lecturers.filter(l => l.name && l.name.includes(q));
+  renderSuggest(matches, q);
+});
+
+function renderSuggest(matches, q) {
+  if (matches.length === 0) {
+    suggestBox.innerHTML = `<div class="empty">'${escapeHtml(q)}' 검색 결과 없음 — 아래 정보를 직접 입력하면 신규 강사로 등록돼요.</div>`;
+  } else {
+    suggestBox.innerHTML = matches.map(l => `
+      <div class="item" data-id="${l.id}">
+        <b>${escapeHtml(l.name)}</b>
+        <span>${escapeHtml(l.org || '')} · ${escapeHtml(l.phone || '')}</span>
+      </div>
+    `).join('');
+  }
+  suggestBox.classList.add('show');
+  suggestBox.querySelectorAll('.item[data-id]').forEach(el => {
+    el.onclick = () => selectLecturer(el.dataset.id);
+  });
+  if (matches.length === 0) setMode('new');
+}
+
+function selectLecturer(id) {
+  const l = lecturers.find(x => x.id === id);
+  if (!l) return;
+  selectedLecturerId = id;
+  document.getElementById('f_name').value = l.name || '';
+  document.getElementById('f_org').value = l.org || '';
+  document.getElementById('f_ssn').value = l.ssn || '';
+  document.getElementById('f_addr').value = l.addr || '';
+  document.getElementById('f_phone').value = l.phone || '';
+  document.getElementById('f_bank').value = l.bank || '';
+  document.getElementById('f_account').value = l.account || '';
+  searchInput.value = l.name;
+  suggestBox.classList.remove('show');
+  setMode('existing');
+}
+
+function setMode(mode) {
+  const badge = document.getElementById('modeBadge');
+  if (mode === 'existing') {
+    badge.innerHTML = `<span class="badge-mode existing">✓ 기존 강사 · 정보 자동 입력됨</span>`;
+  } else if (mode === 'new') {
+    badge.innerHTML = `<span class="badge-mode new">＋ 신규 강사 · 정보를 직접 입력해 주세요</span>`;
+  } else {
+    badge.innerHTML = '';
+  }
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.search-row')) suggestBox.classList.remove('show');
+});
+
+/* ---------- 금액 자동 계산 ---------- */
+const amountInput = document.getElementById('f_amount');
+amountInput.addEventListener('input', calcAmount);
+function calcAmount() {
+  const A = Number(amountInput.value) || 0;
+  const tax = Math.round(A * 0.08);
+  const local = Math.round(A * 0.008);
+  const net = A - tax - local;
+  document.getElementById('calc_tax').textContent = tax.toLocaleString() + '원';
+  document.getElementById('calc_local').textContent = local.toLocaleString() + '원';
+  document.getElementById('calc_net').textContent = net.toLocaleString() + '원';
+}
+
+/* ---------- 강의일자 기본값: 오늘 ---------- */
+document.getElementById('f_date').value = new Date().toISOString().slice(0,10);
+
+/* ---------- 서명 캔버스 ---------- */
+const canvas = document.getElementById('sigCanvas');
+const ctx = canvas.getContext('2d');
+const placeholder = document.getElementById('sigPlaceholder');
+let drawing = false;
+let hasSignature = false;
+
+function resizeCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  const ratio = window.devicePixelRatio || 1;
+  canvas.width = rect.width * ratio;
+  canvas.height = rect.height * ratio;
+  ctx.scale(ratio, ratio);
+  ctx.lineWidth = 2.4;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#122B4D';
+}
+window.addEventListener('resize', () => { const d = canvas.toDataURL(); resizeCanvas(); });
+resizeCanvas();
+
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  if (e.touches) {
+    return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+  }
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+function startDraw(e) {
+  e.preventDefault();
+  drawing = true;
+  hasSignature = true;
+  placeholder.style.display = 'none';
+  const p = getPos(e);
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y);
+}
+function moveDraw(e) {
+  if (!drawing) return;
+  e.preventDefault();
+  const p = getPos(e);
+  ctx.lineTo(p.x, p.y);
+  ctx.stroke();
+}
+function endDraw(e) { drawing = false; }
+
+canvas.addEventListener('pointerdown', startDraw);
+canvas.addEventListener('pointermove', moveDraw);
+canvas.addEventListener('pointerup', endDraw);
+canvas.addEventListener('pointercancel', endDraw);
+canvas.addEventListener('pointerleave', endDraw);
+
+document.getElementById('clearSig').onclick = () => {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  hasSignature = false;
+  placeholder.style.display = 'block';
+};
+
+/* ---------- 제출 ---------- */
+const statusMsg = document.getElementById('statusMsg');
+const submitBtn = document.getElementById('submitBtn');
+
+submitBtn.onclick = async () => {
+  const data = {
+    name: document.getElementById('f_name').value.trim(),
+    org: document.getElementById('f_org').value.trim(),
+    ssn: document.getElementById('f_ssn').value.trim(),
+    addr: document.getElementById('f_addr').value.trim(),
+    phone: document.getElementById('f_phone').value.trim(),
+    bank: document.getElementById('f_bank').value.trim(),
+    account: document.getElementById('f_account').value.trim(),
+    round: document.getElementById('f_round').value.trim(),
+    date: document.getElementById('f_date').value,
+    amount: Number(amountInput.value) || 0
+  };
+
+  if (!data.name || !data.round || !data.amount) {
+    setStatus('성명 · 구분 · 수당은 필수 입력이에요.', 'err'); return;
+  }
+  if (!document.getElementById('consent1').checked || !document.getElementById('consent2').checked) {
+    setStatus('개인정보 동의 항목을 모두 체크해 주세요.', 'err'); return;
+  }
+  if (!hasSignature) {
+    setStatus('서명을 받아주세요.', 'err'); return;
+  }
+
+  submitBtn.disabled = true;
+  setStatus('처리 중...', '');
+
+  try {
+    const sigDataUrl = canvas.toDataURL('image/png');
+    const tax = Math.round(data.amount * 0.08);
+    const local = Math.round(data.amount * 0.008);
+    const net = data.amount - tax - local;
+    const consentTime = new Date();
+
+    // 1) 강사 정보 upsert
+    const lecturerRef = selectedLecturerId
+      ? db.collection('users').doc(currentUser.uid).collection('lecturers').doc(selectedLecturerId)
+      : db.collection('users').doc(currentUser.uid).collection('lecturers').doc();
+    await lecturerRef.set({
+      name: data.name, org: data.org, ssn: data.ssn, addr: data.addr,
+      phone: data.phone, bank: data.bank, account: data.account,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    // 2) 영수증 기록 저장
+    await db.collection('users').doc(currentUser.uid).collection('receipts').add({
+      ...data, tax, local, net,
+      signature: sigDataUrl,
+      consent1: true, consent2: true,
+      consentTime: consentTime.toISOString(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    // 3) PDF 생성
+    await generatePdf(data, tax, local, net, sigDataUrl, consentTime);
+
+    setStatus('저장 완료! PDF가 다운로드됐어요.', 'ok');
+    resetFormForNext();
+    await loadLecturers();
+  } catch (e) {
+    console.error(e);
+    setStatus('오류 발생: ' + e.message, 'err');
+  } finally {
+    submitBtn.disabled = false;
+  }
+};
+
+function setStatus(msg, cls) {
+  statusMsg.textContent = msg;
+  statusMsg.className = 'status-msg' + (cls ? ' ' + cls : '');
+}
+
+async function generatePdf(data, tax, local, net, sigDataUrl, consentTime) {
+  document.getElementById('p_round').textContent = data.round;
+  document.getElementById('p_amount').textContent = data.amount.toLocaleString() + '원';
+  document.getElementById('p_name').textContent = data.name;
+  document.getElementById('p_org').textContent = data.org;
+  document.getElementById('p_ssn').textContent = data.ssn;
+  document.getElementById('p_addr').textContent = data.addr;
+  document.getElementById('p_phone').textContent = data.phone;
+  document.getElementById('p_bank').textContent = data.bank;
+  document.getElementById('p_account').textContent = data.account;
+
+  const d = new Date(data.date);
+  document.getElementById('p_date').textContent = `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`;
+  document.getElementById('p_name2').textContent = data.name;
+  document.getElementById('p_sigImg').src = sigDataUrl;
+
+  document.getElementById('p_A').textContent = data.amount.toLocaleString() + '원';
+  document.getElementById('p_B').textContent = (tax + local).toLocaleString() + '원';
+  document.getElementById('p_net').textContent = net.toLocaleString() + '원';
+  document.getElementById('p_consentTime').textContent = consentTime.toLocaleString('ko-KR');
+
+  const el = document.getElementById('printTemplate');
+  el.style.top = '0'; el.style.left = '0'; el.style.position = 'fixed'; el.style.zIndex = '-1'; el.style.opacity = '1';
+  el.style.visibility = 'visible';
+  el.style.top = '-9999px';
+
+  const canvasImg = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff' });
+  const imgData = canvasImg.toDataURL('image/jpeg', 0.95);
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p', 'pt', 'a4');
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const imgW = pageWidth;
+  const imgH = (canvasImg.height / canvasImg.width) * imgW;
+  pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH);
+  pdf.save(`강사료영수증_${data.round}_${data.name}.pdf`);
+}
+
+function resetFormForNext() {
+  ['f_round','f_amount'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('consent1').checked = false;
+  document.getElementById('consent2').checked = false;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  hasSignature = false;
+  placeholder.style.display = 'block';
+  calcAmount();
+  searchInput.value = '';
+  selectedLecturerId = null;
+  setMode(null);
+  ['f_name','f_org','f_ssn','f_addr','f_phone','f_bank','f_account'].forEach(id => document.getElementById(id).value = '');
+}
+
+function escapeHtml(str) {
+  return (str || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+</script>
+</body>
+</html>
