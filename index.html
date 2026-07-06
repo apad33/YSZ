@@ -132,8 +132,8 @@
   .toast.show{opacity:1;}
 
   /* 강사 확인용 PDF 템플릿 (숨김) */
-  .printPage{position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;background:#fff;font-family:'Pretendard','Malgun Gothic',sans-serif;color:#000;padding:26px;}
-  .printPage .box{border:3px solid #000;padding:36px 46px;height:100%;display:flex;flex-direction:column;justify-content:space-between;}
+  .printPage{position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;background:#fff;font-family:'Pretendard','Malgun Gothic',sans-serif;color:#000;padding:34px;}
+  .printPage .box{border:3px solid #000;padding:42px 50px;height:100%;display:flex;flex-direction:column;justify-content:space-between;}
   .printPage .pp-t1{text-align:center;font-size:19px;font-weight:700;margin-bottom:4px;}
   .printPage .pp-t2{text-align:center;font-size:21px;font-weight:700;margin-bottom:0;}
   .printPage table{width:100%;border-collapse:collapse;font-size:14px;}
@@ -144,26 +144,29 @@
   .printPage .dl{text-align:center;font-size:14px;margin-bottom:20px;}
   .printPage .sr{display:flex;justify-content:flex-end;align-items:flex-end;gap:8px;font-size:14.5px;padding-right:6px;}
   .printPage .su{min-width:120px;text-align:center;padding:0 8px 2px;font-weight:700;border-bottom:1.3px solid #000;}
-  .printPage .sig-slot{position:relative;display:inline-block;padding-top:34px;}
-  .printPage .sig-slot img{position:absolute;left:50%;top:-6px;transform:translateX(-50%);height:52px;pointer-events:none;}
+  .printPage .sig-slot{position:relative;display:inline-block;padding-top:16px;}
+  .printPage .sig-slot img{position:absolute;left:50%;top:-4px;transform:translateX(-50%);height:36px;pointer-events:none;}
   .printPage .dd{border-top:1.4px dashed #000;margin:14px 0 16px;}
   .printPage .ct{font-weight:700;font-size:14px;margin:0 0 8px;}
   .printPage table.ctbl td{border:1.4px solid #000;padding:10px;text-align:center;}
   .printPage table.ctbl tr:first-child td{font-weight:700;}
   .printPage .nb{font-size:11px;margin-top:8px;}
-  .printPage .cc-title{text-align:center;font-size:20px;font-weight:700;margin-bottom:16px;}
-  .printPage .cc-intro{font-size:11.5px;line-height:1.7;margin-bottom:14px;}
-  .printPage .cc-sub{text-align:center;font-size:12px;font-weight:700;margin:0 0 14px;}
-  .printPage .cc-sec{margin-bottom:11px;}
-  .printPage .cc-st{font-size:12px;font-weight:700;margin-bottom:3px;}
-  .printPage .cc-sb{font-size:11.5px;line-height:1.65;margin-left:10px;}
-  .printPage .cc-ag{font-size:12px;text-align:right;margin:6px 0 4px;}
-  .printPage .cc-ag b{margin-right:26px;}
-  .printPage .cc-note{font-size:10.5px;line-height:1.6;margin-left:20px;}
-  .printPage .cc-final{font-size:11.5px;line-height:1.7;margin:12px 0;}
+  .printPage .cc-title{text-align:center;font-size:20px;font-weight:700;margin-bottom:18px;}
+  .printPage .cc-intro{font-size:12px;line-height:1.8;margin-bottom:16px;}
+  .printPage .cc-sub{text-align:center;font-size:12.5px;font-weight:700;margin:0 0 16px;}
+  .printPage .cc-sec{margin-bottom:16px;}
+  .printPage .cc-st{font-size:12.5px;font-weight:700;margin-bottom:4px;}
+  .printPage .cc-sb{font-size:12px;line-height:1.75;margin-left:10px;}
+  .printPage .cc-ag{font-size:12.5px;text-align:center;margin:12px 0 2px;letter-spacing:.02em;}
+  .printPage .cc-ag b{margin-right:40px;}
+  .printPage .cc-note{font-size:11px;line-height:1.7;margin-left:20px;}
+  .printPage .cc-final{font-size:12px;line-height:1.8;margin:14px 0;}
   .printPage .cc-bd{text-align:center;font-size:13px;margin:20px 0 14px;}
   .printPage .cc-bs{display:flex;justify-content:center;align-items:flex-end;gap:10px;font-size:13px;}
   .printPage .pp-group{display:flex;flex-direction:column;}
+  #ppg2 .box{justify-content:flex-start;}
+  #ppg2 .pp-group{margin-bottom:22px;}
+  #ppg2 .pp-spacer{flex:1 1 auto;min-height:8px;}
 </style>
 </head>
 <body>
@@ -377,6 +380,7 @@
       <div class="cc-final">■ 동의를 거부할 권리 및 동의를 거부할 경우의 불이익<br>개인정보의 수집·이용에 대한 동의를 거부할 수 있으며, 동의 후에도 언제든지 철회가 가능합니다. 다만 필수항목에 대해서 동의하지 않을 경우 수집·이용 목적과 관련된 사업 참여 및 지원 등에 제한될 수 있습니다.</div>
       <div class="cc-final">■ 본인은 본 동의서의 내용과 개인정보 수집·이용·제공에 관한 권리와 불이익 안내를 이해하고 「개인정보보호법 등」 관련 법규에 의거하여 본인은 위와 같이 개인정보 수집 및 활용에 동의함.</div>
     </div>
+    <div class="pp-spacer"></div>
     <div class="pp-group">
       <div class="cc-bd" id="x_date2"></div>
       <div class="cc-bs"><span>소속</span><span style="min-width:90px;text-align:center;" id="x_org2"></span><span>성명</span><span class="su" id="x_name3"></span><span class="sig-slot"><span>(서명)</span><img id="x_sig2" src=""></span></div>
