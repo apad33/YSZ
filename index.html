@@ -328,7 +328,7 @@
   <div class="card">
     <h2><span class="num">1</span>강사 검색</h2>
     <div class="search-row">
-      <input type="text" id="searchInput" placeholder="이름으로 검색 (예: 이나진)" autocomplete="off">
+      <input type="text" id="searchInput" placeholder="이름으로 검색 (예: 홍길동)" autocomplete="off">
       <div class="suggest" id="suggestBox"></div>
     </div>
     <div id="modeBadge"></div>
@@ -340,11 +340,15 @@
     <div class="grid">
       <div class="field"><label>성명</label><input type="text" id="f_name"></div>
       <div class="field"><label>소속</label><input type="text" id="f_org"></div>
-      <div class="field full"><label>주민등록번호</label><input type="text" id="f_ssn" placeholder="750128-2535617"></div>
+      <div class="field full"><label>주민등록번호</label><input type="text" id="f_ssn" placeholder="000000-0000000"></div>
       <div class="field full"><label>주소</label><input type="text" id="f_addr"></div>
       <div class="field"><label>연락처</label><input type="text" id="f_phone" placeholder="010-0000-0000"></div>
       <div class="field"><label>입금은행</label><input type="text" id="f_bank"></div>
       <div class="field full"><label>계좌번호</label><input type="text" id="f_account"></div>
+    </div>
+    <div id="infoOnlyBar" style="display:none;margin-top:12px;">
+      <button id="saveInfoOnlyBtn" style="width:100%;padding:12px;background:#fff;color:var(--navy);border:1.5px solid var(--navy);border-radius:9px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;">✎ 변경된 강사 정보만 저장 (서명 없이)</button>
+      <div class="status-msg" id="infoOnlyStatus"></div>
     </div>
   </div>
 
@@ -354,7 +358,13 @@
     <div class="grid">
       <div class="field full"><label>구분 (예: 일자리상담소 28차)</label><input type="text" id="f_round"></div>
       <div class="field"><label>강의일자</label><input type="date" id="f_date"></div>
-      <div class="field"><label>수당 (A)</label><input type="number" id="f_amount" placeholder="220000"></div>
+      <div class="field"><label>강사 등급</label>
+        <select id="f_grade">
+          <option value="2급">2급</option>
+        </select>
+      </div>
+      <div class="field"><label>강의시간 (시간)</label><input type="number" id="f_hours" min="1" step="1" placeholder="예: 2"></div>
+      <div class="field full"><label>수당 (A) — 등급·시간 입력 시 자동 계산, 직접 수정도 가능</label><input type="number" id="f_amount"></div>
     </div>
     <div class="calc">
       <div class="calc-row"><span class="lbl">소득세 (8%)</span><span id="calc_tax">0원</span></div>
@@ -540,18 +550,40 @@ function selectLecturer(id) {
 
 function setMode(mode) {
   const badge = document.getElementById('modeBadge');
+  const infoBar = document.getElementById('infoOnlyBar');
   if (mode === 'existing') {
     badge.innerHTML = `<span class="badge-mode existing">✓ 기존 강사 · 정보 자동 입력됨</span>`;
+    infoBar.style.display = 'block';
   } else if (mode === 'new') {
     badge.innerHTML = `<span class="badge-mode new">＋ 신규 강사 · 정보를 직접 입력해 주세요</span>`;
+    infoBar.style.display = 'none';
   } else {
     badge.innerHTML = '';
+    infoBar.style.display = 'none';
   }
 }
 
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.search-row')) suggestBox.classList.remove('show');
 });
+
+/* ---------- 강사 등급별 수당 자동 계산 ---------- */
+const LECTURE_RATES = {
+  '2급': { base: 140000, extra: 80000 } // 기본 1시간 14만원, 초과 1시간당 8만원
+};
+const gradeSelect = document.getElementById('f_grade');
+const hoursInput = document.getElementById('f_hours');
+
+function calcLectureFee() {
+  const hours = Number(hoursInput.value) || 0;
+  if (hours < 1) return;
+  const rate = LECTURE_RATES[gradeSelect.value];
+  const fee = rate.base + Math.max(0, hours - 1) * rate.extra;
+  amountInput.value = fee;
+  calcAmount();
+}
+gradeSelect.addEventListener('change', calcLectureFee);
+hoursInput.addEventListener('input', calcLectureFee);
 
 /* ---------- 금액 자동 계산 ---------- */
 const amountInput = document.getElementById('f_amount');
@@ -625,6 +657,39 @@ document.getElementById('clearSig').onclick = () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   hasSignature = false;
   placeholder.style.display = 'block';
+};
+
+/* ---------- 정보만 저장 (서명 없이) ---------- */
+document.getElementById('saveInfoOnlyBtn').onclick = async () => {
+  if (!selectedLecturerId) return;
+  const infoStatus = document.getElementById('infoOnlyStatus');
+  const btn = document.getElementById('saveInfoOnlyBtn');
+  const updated = {
+    name: document.getElementById('f_name').value.trim(),
+    org: document.getElementById('f_org').value.trim(),
+    ssn: document.getElementById('f_ssn').value.trim(),
+    addr: document.getElementById('f_addr').value.trim(),
+    phone: document.getElementById('f_phone').value.trim(),
+    bank: document.getElementById('f_bank').value.trim(),
+    account: document.getElementById('f_account').value.trim()
+  };
+  if (!updated.name) {
+    infoStatus.textContent = '성명은 필수예요.'; infoStatus.className = 'status-msg err'; return;
+  }
+  btn.disabled = true;
+  infoStatus.textContent = '저장 중...'; infoStatus.className = 'status-msg';
+  try {
+    await db.collection('users').doc(currentUser.uid).collection('lecturers').doc(selectedLecturerId).set({
+      ...updated,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    await loadLecturers();
+    infoStatus.textContent = '강사 정보가 저장됐어요.'; infoStatus.className = 'status-msg ok';
+  } catch (e) {
+    infoStatus.textContent = '오류: ' + e.message; infoStatus.className = 'status-msg err';
+  } finally {
+    btn.disabled = false;
+  }
 };
 
 /* ---------- 제출 ---------- */
@@ -741,7 +806,7 @@ async function generatePdf(data, tax, local, net, sigDataUrl, consentTime) {
 }
 
 function resetFormForNext() {
-  ['f_round','f_amount'].forEach(id => document.getElementById(id).value = '');
+  ['f_round','f_amount','f_hours'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('consent1').checked = false;
   document.getElementById('consent2').checked = false;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
