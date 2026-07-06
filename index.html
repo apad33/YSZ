@@ -676,7 +676,7 @@ function renderReceipts(){
         <div class="rh-amt">${(r.amount||0).toLocaleString()}원</div>
       </div>
       <div class="rec-body" id="body_${r.id}">
-        <div class="rec-detail">
+        <div class="rec-detail" id="view_${r.id}">
           <div><span class="k">구분</span>${escapeHtml(r.round||'')}</div>
           <div><span class="k">성명</span>${escapeHtml(r.name||'')}</div>
           <div><span class="k">소속</span>${escapeHtml(r.org||'')}</div>
@@ -690,12 +690,34 @@ function renderReceipts(){
           <div><span class="k">공제(B)</span>${((r.tax||0)+(r.local||0)).toLocaleString()}원</div>
           <div><span class="k">실지급액</span>${(r.net||0).toLocaleString()}원</div>
         </div>
+        <div class="edit-form" id="edit_${r.id}" style="display:none;">
+          <div class="grid">
+            <div class="field full"><label>구분</label><input data-f="round" value="${escapeAttr(r.round)}"></div>
+            <div class="field"><label>성명</label><input data-f="name" value="${escapeAttr(r.name)}"></div>
+            <div class="field"><label>소속</label><input data-f="org" value="${escapeAttr(r.org)}"></div>
+            <div class="field full"><label>주민등록번호</label><input data-f="ssn" value="${escapeAttr(r.ssn)}"></div>
+            <div class="field full"><label>주소</label><input data-f="addr" value="${escapeAttr(r.addr)}"></div>
+            <div class="field"><label>연락처</label><input data-f="phone" value="${escapeAttr(r.phone)}"></div>
+            <div class="field"><label>입금은행</label><input data-f="bank" value="${escapeAttr(r.bank)}"></div>
+            <div class="field full"><label>계좌번호</label><input data-f="account" value="${escapeAttr(r.account)}"></div>
+            <div class="field"><label>강의일자</label><input type="date" data-f="date" value="${escapeAttr(r.date)}"></div>
+            <div class="field"><label>수당(A)</label><input type="number" data-f="amount" value="${r.amount||0}"></div>
+          </div>
+          <div class="rec-actions" style="margin-top:10px;">
+            <button class="btn-solid" data-save="${r.id}">✓ 저장</button>
+            <button class="btn-outline" data-cancel="${r.id}">취소</button>
+          </div>
+        </div>
         <div style="font-size:12px;color:var(--sub);margin-bottom:4px;">서명</div>
         <div class="rec-sig-preview"><img src="${r.signature||''}" alt="서명"></div>
         <div class="rec-actions">
           <button class="act-sig" data-sig="${r.id}">🖊 서명 PNG</button>
           <button class="act-copy btn-outline" data-copy="${r.id}">📋 정보 복사</button>
           <button class="act-pdf" style="background:#F8F5EF;color:var(--amber);border:1.5px solid var(--amber);" data-pdf="${r.id}">📄 확인용 PDF</button>
+        </div>
+        <div class="rec-actions" style="margin-top:8px;">
+          <button class="btn-outline" data-edit="${r.id}">✎ 수정</button>
+          <button style="background:#FBEAEA;color:var(--danger);border:1.5px solid var(--danger);" data-del="${r.id}">🗑 삭제</button>
         </div>
       </div>
     </div>`).join('');
@@ -705,6 +727,53 @@ function renderReceipts(){
   container.querySelectorAll('[data-sig]').forEach(b=>b.onclick=()=>downloadSig(b.dataset.sig));
   container.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>copyInfo(b.dataset.copy));
   container.querySelectorAll('[data-pdf]').forEach(b=>b.onclick=()=>downloadPdf(b.dataset.pdf,b));
+  container.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{
+    const id=b.dataset.edit;
+    document.getElementById('view_'+id).style.display='none';
+    document.getElementById('edit_'+id).style.display='block';
+  });
+  container.querySelectorAll('[data-cancel]').forEach(b=>b.onclick=()=>{
+    const id=b.dataset.cancel;
+    document.getElementById('edit_'+id).style.display='none';
+    document.getElementById('view_'+id).style.display='block';
+  });
+  container.querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>saveEdit(b.dataset.save,b));
+  container.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>deleteReceipt(b.dataset.del,b));
+}
+
+async function saveEdit(id,btn){
+  const editBox=document.getElementById('edit_'+id);
+  const inputs=editBox.querySelectorAll('[data-f]');
+  const updated={};
+  inputs.forEach(inp=>{
+    const key=inp.dataset.f;
+    updated[key]= key==='amount' ? (Number(inp.value)||0) : inp.value.trim();
+  });
+  const tax=Math.round(updated.amount*0.08), local=Math.round(updated.amount*0.008), net=updated.amount-tax-local;
+  btn.disabled=true; const orig=btn.textContent; btn.textContent='저장 중...';
+  try{
+    await db.collection('users').doc(currentUser.uid).collection('receipts').doc(id)
+      .update({...updated,tax,local,net,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    const idx=allReceipts.findIndex(x=>x.id===id);
+    if(idx>-1) allReceipts[idx]={...allReceipts[idx],...updated,tax,local,net};
+    toast('수정사항을 저장했어요');
+    renderReceipts();
+    // 편집한 항목 다시 펼쳐주기
+    const bodyEl=document.getElementById('body_'+id);
+    if(bodyEl) bodyEl.classList.add('open');
+  }catch(e){alert('저장 실패: '+e.message);btn.disabled=false;btn.textContent=orig;}
+}
+
+async function deleteReceipt(id,btn){
+  const r=allReceipts.find(x=>x.id===id); if(!r)return;
+  if(!confirm(`'${r.name||''} · ${r.round||''}' 제출 건을 삭제할까요?\n삭제하면 되돌릴 수 없어요.`))return;
+  btn.disabled=true;
+  try{
+    await db.collection('users').doc(currentUser.uid).collection('receipts').doc(id).delete();
+    allReceipts=allReceipts.filter(x=>x.id!==id);
+    renderReceipts();
+    toast('삭제했어요');
+  }catch(e){alert('삭제 실패: '+e.message);btn.disabled=false;}
 }
 function downloadSig(id){
   const r=allReceipts.find(x=>x.id===id); if(!r||!r.signature)return;
@@ -792,6 +861,7 @@ async function downloadPdf(id,btn){
 }
 
 function escapeHtml(str){return (str||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function escapeAttr(str){return (str||'').toString().replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
 </script>
 </body>
 </html>
