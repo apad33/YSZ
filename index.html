@@ -303,6 +303,26 @@
   #printTemplate .sign-row{display:flex;justify-content:center;align-items:center;gap:14px;margin-bottom:26px;}
   #printTemplate .sign-row img{height:60px;}
   #printTemplate .calc-title{font-weight:700;font-size:13.5px;margin:8px 0 6px;}
+
+  .rv-row{
+    display:flex;justify-content:space-between;gap:10px;
+    padding:10px 13px;border-bottom:1px solid var(--line);background:#FBFCFD;
+  }
+  .rv-row:last-child{border-bottom:none;}
+  .rv-row span{color:var(--sub);}
+  .rv-row b{color:var(--ink);text-align:right;}
+  .note-strong{
+    margin-top:12px;font-size:12.5px;color:var(--amber);font-weight:600;
+    background:var(--amber-soft);padding:9px 12px;border-radius:8px;
+  }
+  .policy-block{
+    background:#F8F9FA;border:1px solid var(--line);border-radius:9px;
+    padding:12px 14px;margin:10px 0;
+  }
+  .policy-title{font-size:12.5px;font-weight:700;color:var(--navy);margin:8px 0 3px;}
+  .policy-title:first-child{margin-top:0;}
+  .policy-p{font-size:12.5px;color:var(--ink);line-height:1.55;margin:0 0 4px;}
+  .policy-note{font-size:11.5px;color:var(--sub);line-height:1.5;margin:4px 0 0;}
 </style>
 </head>
 <body>
@@ -323,6 +343,9 @@
 
 <div id="appWrap" style="display:none;">
 <div class="wrap">
+
+<!-- ===================== 화면 A: 직원 입력 ===================== -->
+<div id="staffScreen">
 
   <!-- 1. 강사 검색 -->
   <div class="card">
@@ -373,28 +396,74 @@
     </div>
   </div>
 
-  <!-- 4. 개인정보 동의 -->
+  <div class="submit-bar" style="margin-top:16px;padding:0;">
+    <button class="submit-btn" id="goToSignBtn">다음: 강사님 확인 · 서명 화면으로 →</button>
+    <div class="status-msg" id="goToSignStatus"></div>
+  </div>
+
+</div>
+
+<!-- ===================== 화면 B: 강사 확인 · 서명 ===================== -->
+<div id="signScreen" style="display:none;">
+
+  <button id="backToStaffBtn" style="background:none;border:none;color:var(--sub);font-size:13px;text-decoration:underline;cursor:pointer;padding:14px 0 0;">◀ 정보 수정 (담당자용)</button>
+
+  <!-- 영수증 확인 -->
   <div class="card">
-    <h2><span class="num">4</span>개인정보 수집·이용 동의</h2>
+    <h2><span class="num">1</span>영수증 내용 확인</h2>
+    <div style="border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:13.5px;">
+      <div class="rv-row"><span>구분</span><b id="rv_round"></b></div>
+      <div class="rv-row"><span>금액</span><b id="rv_amount"></b></div>
+      <div class="rv-row"><span>성명</span><b id="rv_name"></b></div>
+      <div class="rv-row"><span>소속</span><b id="rv_org"></b></div>
+      <div class="rv-row"><span>주민등록번호</span><b id="rv_ssn"></b></div>
+      <div class="rv-row"><span>주소</span><b id="rv_addr"></b></div>
+      <div class="rv-row"><span>연락처</span><b id="rv_phone"></b></div>
+      <div class="rv-row"><span>입금은행</span><b id="rv_bank"></b></div>
+      <div class="rv-row"><span>계좌번호</span><b id="rv_account"></b></div>
+    </div>
+    <div class="calc">
+      <div class="calc-row"><span class="lbl">수당(A)</span><span id="rv_A"></span></div>
+      <div class="calc-row"><span class="lbl">공제금액(B) — 소득세 8% / 주민세 0.8%</span><span id="rv_B"></span></div>
+      <div class="calc-row net"><span>실지급액(A-B)</span><span id="rv_net"></span></div>
+    </div>
+    <div class="note-strong">위 내용에 다른 점이 있으면 서명 전 담당자에게 말씀해 주세요.</div>
+  </div>
+
+  <!-- 개인정보 동의서 (원문) -->
+  <div class="card">
+    <h2><span class="num">2</span>개인정보 수집·이용 / 제공 동의서</h2>
+    <p class="policy-p">충남경제진흥원은 ‘2026년 충남형 소통공간 찾아가는 일자리버스’ 운영을 위한 강사 소개, 강사료 지급, 설문 분석, 세금납부 등에 활용하기 위해 다음과 같이 개인정보를 수집하고 있습니다.</p>
+
+    <div class="policy-block">
+      <div class="policy-title">■ 개인정보의 수집 및 이용 목적</div>
+      <p class="policy-p">귀하로부터 취득한 개인정보는 개인정보보호법 제15조 및 제17조에서 정하는 바에 따라 강사 소개, 강사료 지급, 설문분석, 세금납부 등을 위한 기초 자료로 활용되며, 이외에 변경 시에는 사전 동의를 구할 것입니다.</p>
+      <div class="policy-title">■ 개인정보의 수집항목</div>
+      <p class="policy-p">성명, 주민등록번호, 소속, 연락처(휴대전화, 전자우편), 주소(직장), 계좌정보(은행명, 계좌번호 등)</p>
+      <div class="policy-title">■ 보유 및 이용 기간</div>
+      <p class="policy-p">수집된 개인정보는 원칙적으로 개인정보의 수집 및 이용목적이 달성되면 지체없이 파기합니다.</p>
+      <p class="policy-note">※ 고유식별정보(주민등록번호) 수집 근거: 「소득세법」 제21조, 제127조, 제164조 / 「소득세법 시행규칙」 제100조 제26호</p>
+    </div>
     <div class="consent">
       <input type="checkbox" id="consent1">
-      <div>
-        <div class="ctitle">개인정보 수집·이용 동의</div>
-        <div class="cdesc">강사 소개, 강사료 지급, 설문분석, 세금납부 등을 위해 성명·주민등록번호·소속·연락처·계좌정보를 수집·이용하는 것에 동의합니다.</div>
-      </div>
+      <div><div class="ctitle">위 개인정보 수집·이용에 동의합니다.</div></div>
+    </div>
+
+    <div class="policy-block">
+      <div class="policy-title">■ 제3자 제공 동의 (개인정보보호법 제17조)</div>
+      <p class="policy-p">1. 제공받는 자(기관) : 국세청&nbsp;&nbsp; 2. 정보의 제공범위 : 성명, 주민번호, 주소 등&nbsp;&nbsp; 3. 정보의 제공목적 : 세금납부&nbsp;&nbsp; 4. 제공받는 자의 보유 및 이용기간 : 이용목적 달성완료시까지</p>
     </div>
     <div class="consent">
       <input type="checkbox" id="consent2">
-      <div>
-        <div class="ctitle">제3자 제공 동의 (국세청)</div>
-        <div class="cdesc">세금납부 목적으로 성명·주민번호·주소 등을 국세청에 제공하는 것에 동의합니다.</div>
-      </div>
+      <div><div class="ctitle">위 제3자(국세청) 제공에 동의합니다.</div></div>
     </div>
+
+    <p class="policy-note" style="margin-top:12px;">※ 동의를 거부할 권리가 있으며, 동의 후에도 언제든지 철회가 가능합니다. 다만 필수항목에 동의하지 않을 경우 수집·이용 목적과 관련된 사업 참여 및 지원 등에 제한될 수 있습니다.</p>
   </div>
 
-  <!-- 5. 서명 -->
+  <!-- 서명 -->
   <div class="card">
-    <h2><span class="num">5</span>서명</h2>
+    <h2><span class="num">3</span>서명</h2>
     <div class="sig-wrap">
       <canvas id="sigCanvas"></canvas>
       <div class="sig-placeholder" id="sigPlaceholder">여기에 서명해 주세요 (손가락 · S펜 모두 가능)</div>
@@ -402,11 +471,13 @@
     <div class="sig-actions"><button id="clearSig">다시 서명</button></div>
   </div>
 
+  <div class="submit-bar" style="padding:0;">
+    <button class="submit-btn" id="submitBtn">영수증 제출 · PDF 저장</button>
+    <div class="status-msg" id="statusMsg"></div>
+  </div>
+
 </div>
 
-<div class="submit-bar">
-  <button class="submit-btn" id="submitBtn">영수증 제출 · PDF 저장</button>
-  <div class="status-msg" id="statusMsg"></div>
 </div>
 </div>
 
@@ -600,6 +671,52 @@ function calcAmount() {
 
 /* ---------- 강의일자 기본값: 오늘 ---------- */
 document.getElementById('f_date').value = new Date().toISOString().slice(0,10);
+
+/* ---------- 화면 전환: 직원 입력 → 강사 확인/서명 ---------- */
+const staffScreen = document.getElementById('staffScreen');
+const signScreen = document.getElementById('signScreen');
+
+document.getElementById('goToSignBtn').onclick = () => {
+  const name = document.getElementById('f_name').value.trim();
+  const round = document.getElementById('f_round').value.trim();
+  const amount = Number(amountInput.value) || 0;
+  const goStatus = document.getElementById('goToSignStatus');
+
+  if (!name || !round || !amount) {
+    goStatus.textContent = '성명 · 구분 · 수당은 필수 입력이에요.';
+    goStatus.className = 'status-msg err';
+    return;
+  }
+  goStatus.textContent = '';
+
+  const tax = Math.round(amount * 0.08);
+  const local = Math.round(amount * 0.008);
+  const net = amount - tax - local;
+
+  document.getElementById('rv_round').textContent = round;
+  document.getElementById('rv_amount').textContent = amount.toLocaleString() + '원';
+  document.getElementById('rv_name').textContent = name;
+  document.getElementById('rv_org').textContent = document.getElementById('f_org').value.trim();
+  document.getElementById('rv_ssn').textContent = document.getElementById('f_ssn').value.trim();
+  document.getElementById('rv_addr').textContent = document.getElementById('f_addr').value.trim();
+  document.getElementById('rv_phone').textContent = document.getElementById('f_phone').value.trim();
+  document.getElementById('rv_bank').textContent = document.getElementById('f_bank').value.trim();
+  document.getElementById('rv_account').textContent = document.getElementById('f_account').value.trim();
+  document.getElementById('rv_A').textContent = amount.toLocaleString() + '원';
+  document.getElementById('rv_B').textContent = (tax + local).toLocaleString() + '원';
+  document.getElementById('rv_net').textContent = net.toLocaleString() + '원';
+
+  staffScreen.style.display = 'none';
+  signScreen.style.display = 'block';
+  window.scrollTo(0, 0);
+  setTimeout(resizeCanvas, 50);
+};
+
+document.getElementById('backToStaffBtn').onclick = () => {
+  signScreen.style.display = 'none';
+  staffScreen.style.display = 'block';
+  window.scrollTo(0, 0);
+};
 
 /* ---------- 서명 캔버스 ---------- */
 const canvas = document.getElementById('sigCanvas');
@@ -806,6 +923,9 @@ async function generatePdf(data, tax, local, net, sigDataUrl, consentTime) {
 }
 
 function resetFormForNext() {
+  signScreen.style.display = 'none';
+  staffScreen.style.display = 'block';
+  window.scrollTo(0, 0);
   ['f_round','f_amount','f_hours'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('consent1').checked = false;
   document.getElementById('consent2').checked = false;
