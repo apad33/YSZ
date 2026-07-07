@@ -136,6 +136,8 @@
 
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 20px;border-radius:24px;font-size:13.5px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.2);opacity:0;transition:opacity .25s;z-index:100;pointer-events:none;}
   .toast.show{opacity:1;}
+  .reveal-btn{background:none;border:1px solid var(--line);color:var(--sub);font-size:11px;border-radius:6px;padding:1px 7px;cursor:pointer;font-family:inherit;margin-left:4px;}
+  .masked{font-family:monospace;letter-spacing:.02em;}
 
   /* 강사 확인용 PDF 템플릿 (숨김) */
   .printPage{position:fixed;top:-9999px;left:-9999px;width:794px;height:auto;background:#fff;font-family:'Nanum Gothic',sans-serif;color:#000;padding:42px;}
@@ -415,6 +417,11 @@ const db = firebase.firestore();
 
 let currentUser=null, lecturers=[], selectedLecturerId=null, allReceipts=[];
 
+/* ===== 보안: 이 앱을 쓸 수 있는 관리자 이메일 =====
+   아래 따옴표 안에 본인 Google 계정 이메일을 넣으세요. (예: "abc@gmail.com")
+   여기에 적힌 이메일로 로그인한 경우에만 화면이 열립니다. */
+const ADMIN_EMAIL = "apad307733@gmail.com";
+
 /* ---------- 토스트 ---------- */
 let toastTimer=null;
 function toast(msg){
@@ -434,6 +441,21 @@ document.getElementById('logoutBtn').onclick=()=>auth.signOut();
 auth.onAuthStateChanged(user=>{
   currentUser=user;
   if(user){
+    // 2겹 보안: 허용된 관리자 이메일이 아니면 접근 차단
+    if(ADMIN_EMAIL && ADMIN_EMAIL!=="ADMIN_EMAIL" && user.email!==ADMIN_EMAIL){
+      document.getElementById('loginGate').innerHTML=
+        '<p style="color:#C0392B;font-weight:600;">이 계정('+escapeHtml(user.email)+')은 접근 권한이 없습니다.</p>'+
+        '<p style="font-size:13px;color:#647184;">관리자 계정으로 다시 로그인해 주세요.</p>'+
+        '<button class="login-btn" id="relogoutBtn">다른 계정으로 로그인</button>';
+      document.getElementById('loginGate').style.display='block';
+      document.getElementById('intakeTab').style.display='none';
+      document.getElementById('listTab').style.display='none';
+      document.getElementById('userbox').style.display='none';
+      document.getElementById('tabs').style.display='none';
+      const rb=document.getElementById('relogoutBtn');
+      if(rb) rb.onclick=()=>auth.signOut().then(()=>location.reload());
+      return;
+    }
     document.getElementById('loginGate').style.display='none';
     document.getElementById('intakeTab').style.display='block';
     document.getElementById('userbox').style.display='flex';
@@ -680,6 +702,22 @@ function filteredReceipts(){
     return true;
   });
 }
+/* 3겹 보안: 민감정보 마스킹 (뒷자리 가림) */
+function maskSsn(s){
+  if(!s) return '';
+  const t=String(s).replace(/\s/g,'');
+  // 6자리-뒷7자리 형태면 뒷자리 마스킹, 아니면 앞 6자만 노출
+  const m=t.match(/^(\d{6})[-]?(\d{0,7})$/);
+  if(m) return m[1]+'-*******';
+  return t.slice(0,3)+'****';
+}
+function maskAccount(s){
+  if(!s) return '';
+  const t=String(s);
+  if(t.length<=4) return '****';
+  return t.slice(0,Math.max(2,t.length-4)).replace(/\d/g,'*')+t.slice(-4);
+}
+
 function renderReceipts(){
   const container=document.getElementById('listContainer');
   const list=filteredReceipts();
@@ -698,11 +736,11 @@ function renderReceipts(){
           <div><span class="k">구분</span>${escapeHtml(r.round||'')}</div>
           <div><span class="k">성명</span>${escapeHtml(r.name||'')}</div>
           <div><span class="k">소속</span>${escapeHtml(r.org||'')}</div>
-          <div><span class="k">주민번호</span>${escapeHtml(r.ssn||'')}</div>
+          <div><span class="k">주민번호</span><span class="masked" data-full="${escapeAttr(r.ssn)}">${escapeHtml(maskSsn(r.ssn))}</span> <button class="reveal-btn" data-reveal="ssn_${r.id}">보기</button></div>
           <div><span class="k">주소</span>${escapeHtml(r.addr||'')}</div>
           <div><span class="k">연락처</span>${escapeHtml(r.phone||'')}</div>
           <div><span class="k">입금은행</span>${escapeHtml(r.bank||'')}</div>
-          <div><span class="k">계좌번호</span>${escapeHtml(r.account||'')}</div>
+          <div><span class="k">계좌번호</span><span class="masked" data-full="${escapeAttr(r.account)}">${escapeHtml(maskAccount(r.account))}</span> <button class="reveal-btn" data-reveal="acc_${r.id}">보기</button></div>
           <div><span class="k">강의일자</span>${escapeHtml(r.date||'')}</div>
           <div><span class="k">수당(A)</span>${(r.amount||0).toLocaleString()}원</div>
           <div><span class="k">공제(B)</span>${((r.tax||0)+(r.local||0)).toLocaleString()}원</div>
@@ -757,6 +795,17 @@ function renderReceipts(){
   });
   container.querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>saveEdit(b.dataset.save,b));
   container.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>deleteReceipt(b.dataset.del,b));
+  container.querySelectorAll('[data-reveal]').forEach(b=>b.onclick=()=>{
+    const span=b.previousElementSibling;
+    if(span && span.classList.contains('masked')){
+      if(b.textContent==='보기'){ span.textContent=span.dataset.full; b.textContent='가리기'; }
+      else{ // 다시 마스킹
+        const isSsn=b.dataset.reveal.startsWith('ssn_');
+        span.textContent=isSsn?maskSsn(span.dataset.full):maskAccount(span.dataset.full);
+        b.textContent='보기';
+      }
+    }
+  });
 }
 
 async function saveEdit(id,btn){
