@@ -139,7 +139,9 @@
 
   /* 강사 확인용 PDF 템플릿 (숨김) */
   .printPage{position:fixed;top:-9999px;left:-9999px;width:794px;height:auto;background:#fff;font-family:'Nanum Gothic',sans-serif;color:#000;padding:42px;}
-  .printPage .box{border:3px solid #000;padding:32px 44px;display:flex;flex-direction:column;box-sizing:border-box;}
+  .printPage .box{border:3px solid #000;padding:32px 44px;height:1050px;display:flex;flex-direction:column;box-sizing:border-box;}
+  #ppg1 .box{justify-content:space-between;}
+  #ppg2 .box{justify-content:flex-start;}
   .printPage .pp-t1{text-align:center;font-size:32px;font-weight:700;margin-bottom:2px;font-family:'GmarketSans',sans-serif;}
   .printPage .pp-t2{text-align:center;font-size:32px;font-weight:700;margin-bottom:16px;font-family:'GmarketSans',sans-serif;}
   .printPage table{width:100%;border-collapse:collapse;font-size:20px;font-family:'Nanum Gothic',sans-serif;}
@@ -955,15 +957,6 @@ async function generatePdfFromRecord(r){
   set('x_date2',dateStr);set('x_org2',r.org||'');set('x_name3',r.name||'');
   document.getElementById('x_sig1').src=r.signature||'';
   document.getElementById('x_sig2').src=r.signature||'';
-
-  // 1페이지 실제 높이에 맞춰 2페이지 박스 높이를 동적으로 맞춤 (남는 공간은 하단 서명줄 앞으로 모음)
-  const box1=document.querySelector('#ppg1 .box');
-  const box2=document.querySelector('#ppg2 .box');
-  box2.style.minHeight='';
-  await new Promise(r=>setTimeout(r,30));
-  const targetH=box1.offsetHeight;
-  if(targetH>0) box2.style.minHeight=targetH+'px';
-  await new Promise(r=>setTimeout(r,30));
 
   const {jsPDF}=window.jspdf;
   const pdf=new jsPDF('p','pt','a4');
