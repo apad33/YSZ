@@ -619,8 +619,15 @@ submitBtn.onclick=async()=>{
       ...data,tax,local,net,signature:sigPng,consent1:true,consent2:true,
       consentTime:new Date().toISOString(),createdAt:firebase.firestore.FieldValue.serverTimestamp()
     });
-    setStatus('제출 완료! 사무실에서 [제출 목록]에서 확인하세요.','ok');
-    toast('저장되었습니다');
+    setStatus('제출 완료! PDF를 만드는 중...','ok');
+    try{
+      await generatePdfFromRecord({...data,tax,local,net,signature:sigPng});
+      toast('제출 완료 · PDF 다운로드됨');
+    }catch(pdfErr){
+      console.error(pdfErr);
+      toast('저장은 완료됐어요 (PDF 생성만 실패)');
+    }
+    setStatus('제출 완료! 사무실에서 [제출 목록]에서도 확인할 수 있어요.','ok');
     resetFormForNext();
     await loadLecturers();
   }catch(e){console.error(e);setStatus('오류: '+e.message,'err');}
@@ -713,7 +720,7 @@ function renderReceipts(){
         <div class="rec-actions">
           <button class="act-sig" data-sig="${r.id}">🖊 서명 PNG</button>
           <button class="act-copy btn-outline" data-copy="${r.id}">📋 정보 복사</button>
-          <button class="act-pdf" style="background:#F8F5EF;color:var(--amber);border:1.5px solid var(--amber);" data-pdf="${r.id}">📄 확인용 PDF</button>
+          <button class="act-pdf" style="background:#F8F5EF;color:var(--amber);border:1.5px solid var(--amber);" data-pdf="${r.id}">📄 PDF</button>
         </div>
         <div class="rec-actions" style="margin-top:8px;">
           <button class="btn-outline" data-edit="${r.id}">✎ 수정</button>
@@ -821,44 +828,49 @@ document.getElementById('exportExcelBtn').onclick=()=>{
   toast(`${list.length}건 엑셀로 내보냈어요`);
 };
 
-/* ---------- 확인용 PDF 생성 (강사 보여주기용, 2페이지) ---------- */
+/* ---------- PDF 생성 (강사 보여주기용, 2페이지) ---------- */
+async function generatePdfFromRecord(r){
+  const tax=r.tax||0, local=r.local||0;
+  const d=new Date(r.date||new Date());
+  const dateStr=`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`;
+  const set=(eid,v)=>{document.getElementById(eid).textContent=v;};
+  set('x_round',r.round||'');set('x_amount',(r.amount||0).toLocaleString()+'원');
+  set('x_name',r.name||'');set('x_org',r.org||'');set('x_ssn',r.ssn||'');
+  set('x_addr',r.addr||'');set('x_phone',r.phone||'');set('x_bank',r.bank||'');set('x_account',r.account||'');
+  set('x_date',dateStr);set('x_name2',r.name||'');
+  set('x_A',(r.amount||0).toLocaleString()+'원');set('x_B',(tax+local).toLocaleString()+'원');set('x_net',(r.net||0).toLocaleString()+'원');
+  set('x_date2',dateStr);set('x_org2',r.org||'');set('x_name3',r.name||'');
+  document.getElementById('x_sig1').src=r.signature||'';
+  document.getElementById('x_sig2').src=r.signature||'';
+
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF('p','pt','a4');
+  const pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight();
+  async function addPage(elId,first){
+    const el=document.getElementById(elId);
+    const cv=await html2canvas(el,{scale:2,backgroundColor:'#ffffff'});
+    const img=cv.toDataURL('image/jpeg',0.95);
+    let w=pw, h=(cv.height/cv.width)*w;
+    if(h>ph){h=ph;w=(cv.width/cv.height)*h;}
+    const ox=(pw-w)/2, oy=(ph-h)/2;
+    if(!first)pdf.addPage();
+    pdf.addImage(img,'JPEG',ox,oy,w,h);
+  }
+  await addPage('ppg1',true);
+  await addPage('ppg2',false);
+  pdf.save(`강사료영수증_${(r.round||'').replace(/\s/g,'')}_${r.name||''}.pdf`);
+}
+
 async function downloadPdf(id,btn){
   const r=allReceipts.find(x=>x.id===id); if(!r)return;
   const orig=btn?btn.textContent:''; if(btn){btn.disabled=true;btn.textContent='생성 중...';}
   try{
-    const tax=r.tax||0, local=r.local||0;
-    const d=new Date(r.date||new Date());
-    const dateStr=`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`;
-    const set=(eid,v)=>{document.getElementById(eid).textContent=v;};
-    set('x_round',r.round||'');set('x_amount',(r.amount||0).toLocaleString()+'원');
-    set('x_name',r.name||'');set('x_org',r.org||'');set('x_ssn',r.ssn||'');
-    set('x_addr',r.addr||'');set('x_phone',r.phone||'');set('x_bank',r.bank||'');set('x_account',r.account||'');
-    set('x_date',dateStr);set('x_name2',r.name||'');
-    set('x_A',(r.amount||0).toLocaleString()+'원');set('x_B',(tax+local).toLocaleString()+'원');set('x_net',(r.net||0).toLocaleString()+'원');
-    set('x_date2',dateStr);set('x_org2',r.org||'');set('x_name3',r.name||'');
-    document.getElementById('x_sig1').src=r.signature||'';
-    document.getElementById('x_sig2').src=r.signature||'';
-
-    const {jsPDF}=window.jspdf;
-    const pdf=new jsPDF('p','pt','a4');
-    const pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight();
-    async function addPage(elId,first){
-      const el=document.getElementById(elId);
-      const cv=await html2canvas(el,{scale:2,backgroundColor:'#ffffff'});
-      const img=cv.toDataURL('image/jpeg',0.95);
-      let w=pw, h=(cv.height/cv.width)*w;
-      if(h>ph){h=ph;w=(cv.width/cv.height)*h;}
-      const ox=(pw-w)/2, oy=(ph-h)/2;
-      if(!first)pdf.addPage();
-      pdf.addImage(img,'JPEG',ox,oy,w,h);
-    }
-    await addPage('ppg1',true);
-    await addPage('ppg2',false);
-    pdf.save(`확인용_강사료영수증_${(r.round||'').replace(/\s/g,'')}_${r.name||''}.pdf`);
-    toast('확인용 PDF를 다운로드했어요');
+    await generatePdfFromRecord(r);
+    toast('PDF를 다운로드했어요');
   }catch(e){console.error(e);toast('PDF 생성 오류: '+e.message);}
   finally{if(btn){btn.disabled=false;btn.textContent=orig;}}
 }
+
 
 function escapeHtml(str){return (str||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 function escapeAttr(str){return (str||'').toString().replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
