@@ -138,24 +138,26 @@
   .toast.show{opacity:1;}
 
   /* 강사 확인용 PDF 템플릿 (숨김) */
-  .printPage{position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;background:#fff;font-family:'Nanum Gothic',sans-serif;color:#000;padding:28px;}
+  .printPage{position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;background:#fff;font-family:'Nanum Gothic',sans-serif;color:#000;padding:18px;}
   .printPage .box{border:3px solid #000;padding:32px 44px;height:100%;display:flex;flex-direction:column;justify-content:space-between;}
-  .printPage .pp-t1{text-align:center;font-size:30px;font-weight:700;margin-bottom:4px;font-family:'GmarketSans',sans-serif;}
-  .printPage .pp-t2{text-align:center;font-size:30px;font-weight:700;margin-bottom:0;font-family:'GmarketSans',sans-serif;}
+  .printPage .pp-t1{text-align:center;font-size:32px;font-weight:700;margin-bottom:2px;font-family:'GmarketSans',sans-serif;}
+  .printPage .pp-t2{text-align:center;font-size:32px;font-weight:700;margin-bottom:16px;font-family:'GmarketSans',sans-serif;}
   .printPage table{width:100%;border-collapse:collapse;font-size:20px;font-family:'Nanum Gothic',sans-serif;}
   .printPage table.rtbl td{border:1.4px solid #000;padding:10px 14px;text-align:center;}
-  .printPage .kk{width:150px;font-weight:700;letter-spacing:.3em;}
+  .printPage .kk{width:170px;font-weight:700;white-space:nowrap;text-align:justify;text-align-last:justify;text-justify:inter-character;padding-left:16px!important;padding-right:16px!important;}
   .printPage .np{font-size:12px;margin-top:8px;font-family:'Noto Sans KR',sans-serif;font-weight:500;}
-  .printPage .rc{text-align:center;margin:14px 0 8px;font-size:18px;font-family:'Nanum Myeongjo',serif;}
-  .printPage .dl{text-align:center;font-size:18px;margin-bottom:10px;font-family:'Nanum Myeongjo',serif;}
+  .printPage .rc{text-align:center;margin:16px 0 0;font-size:20px;font-family:'Nanum Myeongjo',serif;}
+  .printPage .dl{text-align:center;font-size:18px;margin:16px 0 10px;font-family:'Nanum Myeongjo',serif;}
   .printPage .sr{display:flex;justify-content:flex-end;align-items:flex-end;gap:8px;font-size:18px;padding-right:6px;font-family:'Nanum Myeongjo',serif;}
   .printPage .su{min-width:120px;text-align:center;padding:0 8px 2px;font-weight:700;border-bottom:1.3px solid #000;}
   .printPage .sig-slot{position:relative;display:inline-block;padding-top:16px;}
   .printPage .sig-slot img{position:absolute;left:50%;top:-4px;transform:translateX(-50%);height:36px;pointer-events:none;}
   .printPage .dd{border-top:1.4px dashed #000;margin:14px 0 16px;}
   .printPage .ct{font-weight:700;font-size:15px;margin:0 0 8px;font-family:'Nanum Gothic',sans-serif;}
+  .printPage table.ctbl{font-size:15px;}
+  .printPage .ct-row{font-weight:700;}
   .printPage table.ctbl td{border:1.4px solid #000;padding:10px;text-align:center;}
-  .printPage table.ctbl tr:first-child td{font-weight:700;}
+  .printPage table.ctbl tr:nth-child(2) td{font-weight:700;}
   .printPage .nb{font-size:12px;margin-top:8px;font-family:'Noto Sans KR',sans-serif;font-weight:500;}
   .printPage .cc-title{text-align:center;font-size:20px;font-weight:700;margin-bottom:18px;font-family:'Nanum Gothic',sans-serif;}
   .printPage .cc-intro{font-size:14px;line-height:1.8;margin-bottom:16px;font-family:'Nanum Gothic',sans-serif;}
@@ -342,8 +344,6 @@
     <div class="pp-group">
       <div class="pp-t1">2026년 충남형 소통공간</div>
       <div class="pp-t2">‘찾아가는 일자리버스’ 강사료 영수증</div>
-    </div>
-    <div class="pp-group">
       <table class="rtbl">
         <tr><td class="kk">구 분</td><td id="x_round"></td></tr>
         <tr><td class="kk">금 액</td><td id="x_amount"></td></tr>
@@ -356,16 +356,14 @@
         <tr><td class="kk">계 좌 번 호</td><td id="x_account"></td></tr>
       </table>
       <div class="np">※ 주민등록번호 수집 근거는 소득세법 시행령 및 시행규칙에 의거 세금납부를 위함</div>
-    </div>
-    <div class="pp-group">
       <div class="rc">상기 금액을 정히 영수함.</div>
       <div class="dl" id="x_date"></div>
       <div class="sr"><span>영&nbsp;&nbsp;수&nbsp;&nbsp;자</span><span class="su" id="x_name2"></span><span class="sig-slot"><span>(서명)</span><img id="x_sig1" src=""></span></div>
     </div>
     <div class="dd"></div>
     <div class="pp-group">
-      <div class="ct">지급 산출내역</div>
       <table class="ctbl">
+        <tr><td colspan="3" class="ct-row">지급 산출내역</td></tr>
         <tr><td>수당(A)</td><td>공제금액(B)</td><td>실지급액(A-B)</td></tr>
         <tr><td id="x_A"></td><td id="x_B"></td><td id="x_net"></td></tr>
       </table>
