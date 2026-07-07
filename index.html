@@ -389,7 +389,7 @@
 </div>
 
 <script>
-/* ===== Firebase 설정 — trip-manager-fc684 config를 그대로 넣으세요 ===== */
+/* ===== Firebase 설정 — trip-manager-fc684 프로젝트 config (이미 채워져 있음) ===== */
 const firebaseConfig = {
   apiKey: "AIzaSyD7-CeYQ0MdGuHFI-dw_Ne3E3xcR9LHD74",
   authDomain: "trip-manager-fc684.firebaseapp.com",
@@ -557,7 +557,7 @@ function resizeCanvas(){
   const rect=canvas.getBoundingClientRect();
   const ratio=window.devicePixelRatio||1;
   canvas.width=rect.width*ratio;canvas.height=rect.height*ratio;
-  ctx.scale(ratio,ratio);ctx.lineWidth=2.4;ctx.lineCap='round';ctx.strokeStyle='#122B4D';
+  ctx.scale(ratio,ratio);ctx.lineWidth=2.4;ctx.lineCap='round';ctx.strokeStyle='#000000';
 }
 resizeCanvas();
 function getPos(e){
