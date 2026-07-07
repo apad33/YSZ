@@ -308,6 +308,13 @@
 <!-- ============ 제출 목록 탭 ============ -->
 <div id="listTab" style="display:none;">
 <div class="wrap">
+  <div class="card" id="bulkCard">
+    <h2><span class="num">＋</span>강사 정보 엑셀로 일괄 등록</h2>
+    <p style="font-size:12.5px;color:var(--sub);line-height:1.6;margin:0 0 10px;">기존에 정리해두신 강사수당 엑셀을 업로드하면, '대상/주민번호/소속/은행명/계좌번호' 열을 읽어 중복 없이 강사 정보로 등록해요. (강사료 지급 기록 자체가 아니라 강사 프로필만 등록됩니다)</p>
+    <input type="file" id="bulkFile" accept=".xlsx,.xls" style="width:100%;padding:10px;border:1.5px solid var(--line);border-radius:9px;background:#FBFCFD;font-size:13px;">
+    <div id="bulkPreview" style="margin-top:12px;"></div>
+  </div>
+
   <div class="list-toolbar">
     <input type="text" id="listSearch" placeholder="이름/구분 검색" style="flex:2;min-width:140px;">
     <input type="date" id="listFrom" class="date-in">
@@ -805,6 +812,110 @@ function copyInfo(id){
     try{document.execCommand('copy');toast('정보를 복사했어요');}catch(e){alert('복사 실패');}
     ta.remove();
   });
+}
+
+/* ---------- 강사 정보 엑셀 일괄 등록 ---------- */
+document.getElementById('bulkFile').addEventListener('change', handleBulkFile);
+
+function normHeader(h){ return (h||'').toString().trim(); }
+
+async function handleBulkFile(e){
+  const file=e.target.files[0]; if(!file)return;
+  const preview=document.getElementById('bulkPreview');
+  preview.innerHTML=`<div class="status-msg">엑셀 읽는 중...</div>`;
+  try{
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array'});
+    const sheetName=wb.SheetNames[0];
+    const ws=wb.Sheets[sheetName];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+
+    // 헤더 행 찾기: '대상' 또는 '성명' 컬럼이 있는 행
+    let headerRowIdx=-1, colMap={};
+    for(let i=0;i<rows.length;i++){
+      const row=rows[i]||[];
+      const idxName=row.findIndex(c=>['대상','성명','이름'].includes(normHeader(c)));
+      if(idxName>-1){
+        headerRowIdx=i;
+        row.forEach((cell,ci)=>{
+          const h=normHeader(cell);
+          if(['대상','성명','이름'].includes(h)) colMap.name=ci;
+          else if(h==='주민번호'||h==='주민등록번호') colMap.ssn=ci;
+          else if(h==='소속') colMap.org=ci;
+          else if(h==='은행명'||h==='입금은행') colMap.bank=ci;
+          else if(h==='계좌번호') colMap.account=ci;
+          else if(h==='연락처'||h==='전화번호') colMap.phone=ci;
+        });
+        break;
+      }
+    }
+    if(headerRowIdx===-1 || colMap.name===undefined){
+      preview.innerHTML=`<div class="status-msg err">'대상' 또는 '성명' 열을 찾지 못했어요. 엑셀 형식을 확인해 주세요.</div>`;
+      return;
+    }
+
+    const map={};
+    for(let i=headerRowIdx+1;i<rows.length;i++){
+      const row=rows[i]||[];
+      const name=row[colMap.name]; if(!name)continue;
+      const rec=map[name] || {name};
+      const grab=(key)=>{ const ci=colMap[key]; if(ci===undefined)return; const v=row[ci]; if(v && !rec[key]) rec[key]=String(v).trim(); };
+      grab('ssn');grab('org');grab('bank');grab('account');grab('phone');
+      map[name]=rec;
+    }
+    const list=Object.values(map);
+    if(list.length===0){
+      preview.innerHTML=`<div class="status-msg err">등록할 강사 정보를 찾지 못했어요.</div>`;
+      return;
+    }
+    preview.innerHTML=`
+      <div style="font-size:13px;margin-bottom:8px;"><b>${list.length}명</b>의 강사 정보를 찾았어요 (중복 제거됨):</div>
+      <div style="max-height:160px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:12.5px;color:var(--sub);margin-bottom:10px;">
+        ${list.map(l=>escapeHtml(l.name)+(l.org?' · '+escapeHtml(l.org):'')).join('<br>')}
+      </div>
+      <button class="btn-solid" id="confirmBulkBtn" style="width:100%;">이 ${list.length}명 강사 정보로 저장하기</button>
+      <div class="status-msg" id="bulkStatus"></div>
+    `;
+    document.getElementById('confirmBulkBtn').onclick=()=>saveBulkLecturers(list);
+  }catch(err){
+    console.error(err);
+    preview.innerHTML=`<div class="status-msg err">엑셀을 읽는 중 오류: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function saveBulkLecturers(list){
+  const st=document.getElementById('bulkStatus');
+  const btn=document.getElementById('confirmBulkBtn');
+  btn.disabled=true; st.textContent='저장 중... (0/'+list.length+')'; st.className='status-msg';
+  let done=0, created=0, updated=0;
+  try{
+    for(const l of list){
+      const existing=lecturers.find(x=>x.name===l.name);
+      const payload={
+        name:l.name, org:l.org||'', ssn:l.ssn||'', addr:existing?.addr||'',
+        phone:l.phone||existing?.phone||'', bank:l.bank||'', account:l.account||'',
+        updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+      };
+      if(existing){
+        await db.collection('users').doc(currentUser.uid).collection('lecturers').doc(existing.id).set(payload,{merge:true});
+        updated++;
+      }else{
+        await db.collection('users').doc(currentUser.uid).collection('lecturers').add(payload);
+        created++;
+      }
+      done++;
+      st.textContent=`저장 중... (${done}/${list.length})`;
+    }
+    await loadLecturers();
+    st.textContent=`완료! 신규 ${created}명 등록, 기존 ${updated}명 정보 업데이트했어요.`;
+    st.className='status-msg ok';
+    toast('강사 정보 일괄 등록 완료');
+    document.getElementById('bulkFile').value='';
+  }catch(e){
+    st.textContent='오류: '+e.message; st.className='status-msg err';
+  }finally{
+    btn.disabled=false;
+  }
 }
 
 /* ---------- 엑셀 내보내기 ---------- */
