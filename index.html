@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>강사료 영수증 · 전자서명</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nanum+Myeongjo&family=Nanum+Gothic:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -132,37 +135,37 @@
   .toast.show{opacity:1;}
 
   /* 강사 확인용 PDF 템플릿 (숨김) */
-  .printPage{position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;background:#fff;font-family:'Pretendard','Malgun Gothic',sans-serif;color:#000;padding:34px;}
+  .printPage{position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;background:#fff;font-family:'Nanum Gothic',sans-serif;color:#000;padding:34px;}
   .printPage .box{border:3px solid #000;padding:42px 50px;height:100%;display:flex;flex-direction:column;justify-content:space-between;}
-  .printPage .pp-t1{text-align:center;font-size:19px;font-weight:700;margin-bottom:4px;}
-  .printPage .pp-t2{text-align:center;font-size:21px;font-weight:700;margin-bottom:0;}
-  .printPage table{width:100%;border-collapse:collapse;font-size:14px;}
+  .printPage .pp-t1{text-align:center;font-size:22px;font-weight:700;margin-bottom:4px;font-family:'Black Han Sans',sans-serif;}
+  .printPage .pp-t2{text-align:center;font-size:22px;font-weight:700;margin-bottom:0;font-family:'Black Han Sans',sans-serif;}
+  .printPage table{width:100%;border-collapse:collapse;font-size:15px;font-family:'Nanum Gothic',sans-serif;}
   .printPage table.rtbl td{border:1.4px solid #000;padding:10px 14px;text-align:center;}
   .printPage .kk{width:150px;font-weight:700;letter-spacing:.3em;}
-  .printPage .np{font-size:11px;margin-top:8px;}
-  .printPage .rc{text-align:center;margin:26px 0 10px;font-size:15px;}
-  .printPage .dl{text-align:center;font-size:14px;margin-bottom:20px;}
-  .printPage .sr{display:flex;justify-content:flex-end;align-items:flex-end;gap:8px;font-size:14.5px;padding-right:6px;}
+  .printPage .np{font-size:11px;margin-top:8px;font-family:'Noto Sans KR',sans-serif;font-weight:500;}
+  .printPage .rc{text-align:center;margin:26px 0 10px;font-size:15px;font-family:'Nanum Myeongjo',serif;}
+  .printPage .dl{text-align:center;font-size:15px;margin-bottom:20px;font-family:'Nanum Myeongjo',serif;}
+  .printPage .sr{display:flex;justify-content:flex-end;align-items:flex-end;gap:8px;font-size:15px;padding-right:6px;font-family:'Nanum Myeongjo',serif;}
   .printPage .su{min-width:120px;text-align:center;padding:0 8px 2px;font-weight:700;border-bottom:1.3px solid #000;}
   .printPage .sig-slot{position:relative;display:inline-block;padding-top:16px;}
   .printPage .sig-slot img{position:absolute;left:50%;top:-4px;transform:translateX(-50%);height:36px;pointer-events:none;}
   .printPage .dd{border-top:1.4px dashed #000;margin:14px 0 16px;}
-  .printPage .ct{font-weight:700;font-size:14px;margin:0 0 8px;}
+  .printPage .ct{font-weight:700;font-size:14px;margin:0 0 8px;font-family:'Nanum Gothic',sans-serif;}
   .printPage table.ctbl td{border:1.4px solid #000;padding:10px;text-align:center;}
   .printPage table.ctbl tr:first-child td{font-weight:700;}
-  .printPage .nb{font-size:11px;margin-top:8px;}
-  .printPage .cc-title{text-align:center;font-size:20px;font-weight:700;margin-bottom:18px;}
-  .printPage .cc-intro{font-size:12px;line-height:1.8;margin-bottom:16px;}
-  .printPage .cc-sub{text-align:center;font-size:12.5px;font-weight:700;margin:0 0 16px;}
+  .printPage .nb{font-size:11px;margin-top:8px;font-family:'Noto Sans KR',sans-serif;font-weight:500;}
+  .printPage .cc-title{text-align:center;font-size:20px;font-weight:700;margin-bottom:18px;font-family:'Nanum Gothic',sans-serif;}
+  .printPage .cc-intro{font-size:14px;line-height:1.8;margin-bottom:16px;font-family:'Nanum Gothic',sans-serif;}
+  .printPage .cc-sub{text-align:center;font-size:14px;font-weight:700;margin:0 0 16px;font-family:'Nanum Gothic',sans-serif;}
   .printPage .cc-sec{margin-bottom:16px;}
-  .printPage .cc-st{font-size:12.5px;font-weight:700;margin-bottom:4px;}
-  .printPage .cc-sb{font-size:12px;line-height:1.75;margin-left:10px;}
-  .printPage .cc-ag{font-size:12.5px;text-align:center;margin:12px 0 2px;letter-spacing:.02em;}
+  .printPage .cc-st{font-size:14px;font-weight:700;margin-bottom:4px;font-family:'Nanum Gothic',sans-serif;}
+  .printPage .cc-sb{font-size:14px;line-height:1.75;margin-left:10px;font-family:'Nanum Gothic',sans-serif;}
+  .printPage .cc-ag{font-size:14px;text-align:center;margin:12px 0 2px;letter-spacing:.02em;font-family:'Nanum Gothic',sans-serif;}
   .printPage .cc-ag b{margin-right:40px;}
-  .printPage .cc-note{font-size:11px;line-height:1.7;margin-left:20px;}
-  .printPage .cc-final{font-size:12px;line-height:1.8;margin:14px 0;}
-  .printPage .cc-bd{text-align:center;font-size:13px;margin:20px 0 14px;}
-  .printPage .cc-bs{display:flex;justify-content:center;align-items:flex-end;gap:10px;font-size:13px;}
+  .printPage .cc-note{font-size:14px;line-height:1.7;margin-left:20px;font-family:'Nanum Gothic',sans-serif;}
+  .printPage .cc-final{font-size:14px;line-height:1.8;margin:14px 0;font-family:'Nanum Gothic',sans-serif;}
+  .printPage .cc-bd{text-align:center;font-size:14px;margin:20px 0 14px;font-family:'Nanum Gothic',sans-serif;}
+  .printPage .cc-bs{display:flex;justify-content:center;align-items:flex-end;gap:10px;font-size:14px;font-family:'Nanum Gothic',sans-serif;}
   .printPage .pp-group{display:flex;flex-direction:column;}
   #ppg2 .box{justify-content:flex-start;}
   #ppg2 .pp-group{margin-bottom:22px;}
@@ -377,11 +380,11 @@
     </div>
     <div class="pp-group">
       <div class="cc-sec"><div class="cc-st">■ 개인정보의 수집 및 이용 목적</div><div class="cc-sb">귀하로부터 취득한 개인정보는 개인정보보호법 제15조 및 제17조에서 정하는 바에 따라 강사 소개, 강사료 지급, 설문분석, 세금납부 등을 위한 기초 자료로 활용되며, 이외에 변경 시에는 사전 동의를 구할 것입니다.</div></div>
-      <div class="cc-sec"><div class="cc-st">■ 개인정보의 수집항목</div><div class="cc-sb">성명, 주민등록번호, 소속, 연락처(휴대전화, 전자우편), 주소(직장), 계좌정보(은행명, 계좌번호 등)</div><div class="cc-ag" id="x_ag1">동의함&nbsp;√&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;동의하지 않음&nbsp;☐</div></div>
+      <div class="cc-sec"><div class="cc-st">■ 개인정보의 수집항목</div><div class="cc-sb">성명, 주민등록번호, 소속, 연락처(휴대전화, 전자우편), 주소(직장), 계좌정보(은행명, 계좌번호 등)</div><div class="cc-ag" id="x_ag1">■&nbsp;동의함&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;☐&nbsp;동의하지 않음</div></div>
     </div>
     <div class="pp-group">
       <div class="cc-sec"><div class="cc-st">■ 보유 및 이용 기간</div><div class="cc-sb">수집된 개인정보는 원칙적으로 개인정보의 수집 및 이용목적이 달성되면 지체없이 파기합니다.</div><div class="cc-note">※ 고유식별정보(주민등록번호) 수집 근거 : 「소득세법」 제21조, 제127조, 제164조<br>「소득세법 시행규칙」 제100조 제26호</div></div>
-      <div class="cc-sec"><div class="cc-st">■ 제3자 제공 동의 (개인정보보호법 제17조)</div><div class="cc-sb">1. 제공받는 자(기관) : 국세청<br>2. 정보의 제공범위 : 성명, 주민번호, 주소 등<br>3. 정보의 제공목적 : 세금납부<br>4. 제공받으려는 자의 정보의 보유 및 이용기간 : 이용목적 달성완료시까지</div><div class="cc-ag" id="x_ag2">동의함&nbsp;√&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;동의하지 않음&nbsp;☐</div></div>
+      <div class="cc-sec"><div class="cc-st">■ 제3자 제공 동의 (개인정보보호법 제17조)</div><div class="cc-sb">1. 제공받는 자(기관) : 국세청<br>2. 정보의 제공범위 : 성명, 주민번호, 주소 등<br>3. 정보의 제공목적 : 세금납부<br>4. 제공받으려는 자의 정보의 보유 및 이용기간 : 이용목적 달성완료시까지</div><div class="cc-ag" id="x_ag2">■&nbsp;동의함&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;☐&nbsp;동의하지 않음</div></div>
     </div>
     <div class="pp-group">
       <div class="cc-final">■ 동의를 거부할 권리 및 동의를 거부할 경우의 불이익<br>개인정보의 수집·이용에 대한 동의를 거부할 수 있으며, 동의 후에도 언제든지 철회가 가능합니다. 다만 필수항목에 대해서 동의하지 않을 경우 수집·이용 목적과 관련된 사업 참여 및 지원 등에 제한될 수 있습니다.</div>
@@ -390,7 +393,7 @@
     <div class="pp-spacer"></div>
     <div class="pp-group">
       <div class="cc-bd" id="x_date2"></div>
-      <div class="cc-bs"><span>소속</span><span style="min-width:90px;text-align:center;" id="x_org2"></span><span>성명</span><span class="su" id="x_name3"></span><span class="sig-slot"><span>(서명)</span><img id="x_sig2" src=""></span></div>
+      <div class="cc-bs"><span>소속</span><span class="su" id="x_org2"></span><span>성명</span><span class="su" id="x_name3"></span><span class="sig-slot"><span>(서명)</span><img id="x_sig2" src=""></span></div>
     </div>
   </div>
 </div>
